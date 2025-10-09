@@ -24,29 +24,36 @@ const products = [
   },
   {
     id: 5,
-    name: "Cookies con chocolate amargo al 70%",
-    price: 30000
+    name: "Cookies de avena y chocolate belga",
+    price: 35000,
+    note: "(5 unidades)"
   },
   {
     id: 6,
+    name: "Cookies de avena y pasas de uva",
+    price: 25000,
+    note: "(5 unidades)"
+  },
+  {
+    id: 7,
     name: "Bombones de dátiles rellenos de mantequilla de maní o dulce de leche sin azúcar",
     price: 50000,
     note: "(8 unidades)"
   },
   {
-    id: 7,
+    id: 8,
     name: "Waffles de avena",
     price: 12000,
     unit: "c/u",
     flavors: "Sabores: chocolate, coco, banana, manzana"
   },
   {
-    id: 8,
+    id: 9,
     name: "Alfajor bañado en chocolate",
     price: 16000
   },
   {
-    id: 9,
+    id: 10,
     name: "Torta con chips de chocolate y nueces",
     price: 60000
   }
