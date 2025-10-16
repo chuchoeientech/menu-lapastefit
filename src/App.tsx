@@ -6,7 +6,7 @@ interface CartItem {
   product: Product;
   quantity: number;
 }
-
+//hola
 function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
