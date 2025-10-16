@@ -28,6 +28,12 @@ export const products = defineType({
       type: 'image',
       options: {hotspot: true},
     }),
+    defineField({
+      name: 'unidades',
+      title: 'Unidades',
+      type: 'number',
+      description: 'Cantidad de bombones que trae el producto',
+    }),
   ],
 })
 
