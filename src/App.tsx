@@ -1,112 +1,144 @@
-import React, { useState } from 'react';
-import { Phone, Instagram, Leaf, Coffee, ShoppingCart, Plus, Minus, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Phone, Instagram, Leaf, Coffee, ShoppingCart, Plus, Minus, X, Loader2 } from 'lucide-react';
+import { getProducts, SanityProduct } from './lib/sanity';
 
-const products = [
+// Datos de respaldo en caso de que Sanity no esté disponible
+const fallbackProducts = [
   {
-    id: 1,
-    name: "Budín de avena con chips de chocolate y nueces",
-    price: 40000
+    _id: "1",
+    nombre: "Budín de avena con chips de chocolate y nueces",
+    precio: 40000
   },
   {
-    id: 2,
-    name: "Budín de avena con frutas abrillantadas y nueces tipo navideño",
-    price: 40000
+    _id: "2",
+    nombre: "Budín de avena con frutas abrillantadas y nueces tipo navideño",
+    precio: 40000
   },
   {
-    id: 3,
-    name: "Brownie con chocolate amargo al 70%",
-    price: 35000
+    _id: "3",
+    nombre: "Brownie con chocolate amargo al 70%",
+    precio: 35000
   },
   {
-    id: 4,
-    name: "Carrot cake con frosting light",
-    price: 50000
+    _id: "4",
+    nombre: "Carrot cake con frosting light",
+    precio: 50000
   },
   {
-    id: 5,
-    name: "Cookies de avena y chocolate belga",
-    price: 35000,
-    note: "(5 unidades)"
+    _id: "5",
+    nombre: "Cookies de avena y chocolate belga",
+    precio: 35000,
+    descripcion: "(5 unidades)"
   },
   {
-    id: 6,
-    name: "Cookies de avena y pasas de uva",
-    price: 25000,
-    note: "(5 unidades)"
+    _id: "6",
+    nombre: "Cookies de avena y pasas de uva",
+    precio: 25000,
+    descripcion: "(5 unidades)"
   },
   {
-    id: 7,
-    name: "Bombones de dátiles rellenos de mantequilla de maní o dulce de leche sin azúcar",
-    price: 50000,
-    note: "(8 unidades)"
+    _id: "7",
+    nombre: "Bombones de dátiles rellenos de mantequilla de maní o dulce de leche sin azúcar",
+    precio: 50000,
+    descripcion: "(8 unidades)"
   },
   {
-    id: 8,
-    name: "Waffles de avena",
-    price: 12000,
-    unit: "c/u",
-    flavors: "Sabores: chocolate, coco, banana, manzana"
+    _id: "8",
+    nombre: "Waffles de avena",
+    precio: 12000,
+    descripcion: "Sabores: chocolate, coco, banana, manzana"
   },
   {
-    id: 9,
-    name: "Alfajor bañado en chocolate",
-    price: 16000
+    _id: "9",
+    nombre: "Alfajor bañado en chocolate",
+    precio: 16000
   },
   {
-    id: 10,
-    name: "Torta con chips de chocolate y nueces",
-    price: 60000
+    _id: "10",
+    nombre: "Torta con chips de chocolate y nueces",
+    precio: 60000
   }
 ];
 
 interface CartItem {
-  id: number;
-  name: string;
-  price: number;
+  _id: string;
+  nombre: string;
+  precio: number | null;
   quantity: number;
-  note?: string;
-  unit?: string;
+  descripcion?: string | null;
 }
 
 function App() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [products, setProducts] = useState<SanityProduct[]>(fallbackProducts);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addToCart = (product: any) => {
+  // Cargar productos desde Sanity
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const sanityProducts = await getProducts();
+        if (sanityProducts && sanityProducts.length > 0) {
+          setProducts(sanityProducts);
+        }
+      } catch (err) {
+        console.error('Error loading products:', err);
+        setError('Error al cargar los productos. Usando datos de respaldo.');
+        // Mantener los productos de respaldo
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  const addToCart = (product: SanityProduct) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
+      const existingItem = prevCart.find(item => item._id === product._id);
       if (existingItem) {
         return prevCart.map(item =>
-          item.id === product.id
+          item._id === product._id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        return [...prevCart, { ...product, quantity: 1 }];
+        return [...prevCart, { 
+          _id: product._id, 
+          nombre: product.nombre, 
+          precio: product.precio, 
+          quantity: 1,
+          descripcion: product.descripcion
+        }];
       }
     });
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === productId);
+      const existingItem = prevCart.find(item => item._id === productId);
       if (existingItem && existingItem.quantity > 1) {
         return prevCart.map(item =>
-          item.id === productId
+          item._id === productId
             ? { ...item, quantity: item.quantity - 1 }
             : item
         );
       } else {
-        return prevCart.filter(item => item.id !== productId);
+        return prevCart.filter(item => item._id !== productId);
       }
     });
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + ((item.precio || 0) * item.quantity), 0);
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | null) => {
+    if (price === null || price === undefined) return '0';
     return price.toLocaleString('es-PY');
   };
 
@@ -117,10 +149,10 @@ function App() {
     message += `*Productos solicitados:*\n\n`;
     
     cart.forEach(item => {
-      const itemTotal = item.price * item.quantity;
-      message += `• ${item.name}\n`;
+      const itemTotal = (item.precio || 0) * item.quantity;
+      message += `• ${item.nombre}\n`;
       message += `  Cantidad: ${item.quantity}\n`;
-      message += `  Precio unitario: Gs. ${formatPrice(item.price)}\n`;
+      message += `  Precio unitario: Gs. ${formatPrice(item.precio)}\n`;
       message += `  Subtotal: Gs. ${formatPrice(itemTotal)}\n\n`;
     });
     
@@ -150,7 +182,7 @@ function App() {
       </header>
 
       {/* Cart Button */}
-      <div className="fixed top-4 right-4 z-50">
+      <div className="fixed bottom-4 right-4 z-50">
         <button
           onClick={() => setShowCart(true)}
           className="relative bg-green-600 hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
@@ -191,11 +223,11 @@ function App() {
               ) : (
                 <div className="space-y-4">
                   {cart.map((item) => (
-                    <div key={item.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={item._id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-gray-800">{item.name}</h3>
+                        <h3 className="text-sm font-semibold text-gray-800">{item.nombre}</h3>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item._id)}
                           className="text-red-500 hover:text-red-700 transition-colors"
                         >
                           <X className="w-4 h-4" />
@@ -204,7 +236,7 @@ function App() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(item._id)}
                             className="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1 rounded-full transition-colors"
                           >
                             <Minus className="w-4 h-4" />
@@ -213,7 +245,7 @@ function App() {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => addToCart(products.find(p => p.id === item.id))}
+                            onClick={() => addToCart(products.find(p => p._id === item._id)!)}
                             className="bg-green-100 hover:bg-green-200 text-green-700 p-1 rounded-full transition-colors"
                           >
                             <Plus className="w-4 h-4" />
@@ -221,10 +253,10 @@ function App() {
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-600">
-                            Gs. {formatPrice(item.price)} c/u
+                            Gs. {formatPrice(item.precio)} c/u
                           </p>
                           <p className="font-bold text-green-700">
-                            Gs. {formatPrice(item.price * item.quantity)}
+                            Gs. {formatPrice((item.precio || 0) * item.quantity)}
                           </p>
                         </div>
                       </div>
@@ -273,25 +305,32 @@ function App() {
         {/* Menu Items */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-8 md:p-12">
-            <div className="space-y-8">
-              {products.map((product, index) => (
-                <div key={product.id} className="group">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-green-600 mr-3" />
+                <span className="text-lg text-gray-600">Cargando productos...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                  <p className="text-yellow-800">{error}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {products.map((product, index) => (
+                <div key={product._id} className="group">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 pr-4">
                       <div className="flex items-center mb-2">
                         <span className="w-2 h-2 bg-green-500 rounded-full mr-4 flex-shrink-0 mt-2"></span>
-                        <h3 className="text-lg md:text-xl font-semibold text-gray-800 leading-relaxed group-hover:text-green-700 transition-colors duration-200">
-                          {product.name}
+                        <h3 className="text-base md:text-lg font-semibold text-gray-800 leading-relaxed group-hover:text-green-700 transition-colors duration-200">
+                          {product.nombre}
                         </h3>
                       </div>
-                      {product.note && (
+                      {product.descripcion && (
                         <p className="text-sm text-gray-600 ml-6 mb-1">
-                          {product.note}
-                        </p>
-                      )}
-                      {product.flavors && (
-                        <p className="text-sm text-amber-700 ml-6 italic">
-                          {product.flavors}
+                          {product.descripcion}
                         </p>
                       )}
                     </div>
@@ -299,17 +338,12 @@ function App() {
                       <div className="flex items-baseline mb-3">
                         <span className="text-sm text-gray-500 mr-1">Gs.</span>
                         <span className="text-xl md:text-2xl font-bold text-green-700">
-                          {formatPrice(product.price)}
+                          {formatPrice(product.precio)}
                         </span>
-                        {product.unit && (
-                          <span className="text-sm text-gray-500 ml-1">
-                            {product.unit}
-                          </span>
-                        )}
                       </div>
                       <button
                         onClick={() => addToCart(product)}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center"
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center mt-8"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Agregar
@@ -321,7 +355,8 @@ function App() {
                   )}
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
